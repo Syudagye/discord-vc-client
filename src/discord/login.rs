@@ -1,6 +1,7 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+
+use super::Error;
 
 /// Response from discord when the login is successful
 #[derive(Debug, Deserialize)]
@@ -29,20 +30,6 @@ pub enum LoginResult {
     Requires2FA(Login2FA),
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("Login failed")]
-    UserLoginFailed,
-
-    #[error("The token \"{0}\" is invalid")]
-    InvalidTOTP(String),
-
-    #[error(transparent)]
-    Serde(#[from] serde_json::Error),
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-}
-
 //TODO: convert convert errors to `LoginResult::Failed`
 pub async fn user_login(
     client: &Client,
@@ -59,7 +46,7 @@ pub async fn user_login(
         UserLogin { login, password }
     };
     let res = client
-        .post(crate::endpoint("/auth/login"))
+        .post(crate::discord::endpoint("/auth/login"))
         .header("Content-Type", "application/json")
         .body(serde_json::to_string(&body)?)
         .send()
@@ -94,7 +81,7 @@ pub async fn totp_login(
         }
     };
     let res = client
-        .post(crate::endpoint("/auth/mfa/totp"))
+        .post(crate::discord::endpoint("/auth/mfa/totp"))
         .header("Content-Type", "application/json")
         .body(serde_json::to_string(&body)?)
         .send()
